@@ -74,10 +74,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\MuPDF\platform\win32\bin\Release-Unicode-32bit-x86\</OutputPath>
+    <OutputPath>bin\x86\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\..\MuPDF\platform\win32\bin\Release-Unicode-32bit-x86\Imazen.WebP.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Imazen.WebP.XML</DocumentationFile>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -104,7 +104,7 @@
     <Compile Include="SimpleEncoder.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\MuPDF\platform\win32\MuPDFLib.vcxproj">
+    <ProjectReference Include="..\..\..\..\platform\win32\MuPDFLib.vcxproj">
       <Project>{c21b464f-7799-4b39-8ca6-67ce0468966c}</Project>
       <Name>MuPDFLib</Name>
     </ProjectReference>
