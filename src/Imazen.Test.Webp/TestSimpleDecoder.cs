@@ -13,7 +13,8 @@ namespace Imazen.Test.Webp
         public void TestWebPVersions()
         {
             Imazen.WebP.Extern.LoadLibrary.LoadWebPOrFail();
-            Assert.Equal("0.6.0",SimpleDecoder.GetDecoderVersion());
+            var v = SimpleDecoder.GetDecoderVersion();
+            Assert.Equal("1.2.0", v);
         }
         [Fact]
         public void TestDecSimple()

@@ -12,7 +12,7 @@ namespace Imazen.WebP.Extern {
         }
 
 
-        [DllImportAttribute("libwebp", EntryPoint = "WebPFree", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPFree", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WebPFree(IntPtr toDeallocate);
     }
 }

@@ -58,9 +58,9 @@ namespace Imazen.WebP.Extern
   
         public static void LoadWebPOrFail()
         {
-            if (!AutoLoadNearby("libwebp.dll", true))
+            if (!AutoLoadNearby("MuPDFLib.dll", true))
             {
-                throw new FileNotFoundException("Failed to locate libwebp.dll");
+                throw new FileNotFoundException("Failed to locate MuPDFLib.dll");
             }
         }
         /// <summary>

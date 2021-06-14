@@ -424,7 +424,7 @@ namespace Imazen.WebP.Extern
     {
 
         /// Return Type: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPGetEncoderVersion", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPGetEncoderVersion", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPGetEncoderVersion();
 
 
@@ -435,7 +435,7 @@ namespace Imazen.WebP.Extern
         ///stride: int
         ///quality_factor: float
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeRGB", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeRGB", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeRGB([InAttribute()] IntPtr rgb, int width, int height, int stride, float quality_factor, ref IntPtr output);
 
 
@@ -446,7 +446,7 @@ namespace Imazen.WebP.Extern
         ///stride: int
         ///quality_factor: float
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeBGR", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeBGR", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeBGR([InAttribute()] IntPtr bgr, int width, int height, int stride, float quality_factor, ref IntPtr output);
 
 
@@ -457,7 +457,7 @@ namespace Imazen.WebP.Extern
         ///stride: int
         ///quality_factor: float
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeRGBA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeRGBA", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeRGBA([InAttribute()] IntPtr rgba, int width, int height, int stride, float quality_factor, ref IntPtr output);
 
 
@@ -468,7 +468,7 @@ namespace Imazen.WebP.Extern
         ///stride: int
         ///quality_factor: float
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeBGRA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeBGRA", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr WebPEncodeBGRA([InAttribute()] IntPtr bgra, int width, int height, int stride, float quality_factor, ref IntPtr output);
 
 
@@ -478,7 +478,7 @@ namespace Imazen.WebP.Extern
         ///height: int
         ///stride: int
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeLosslessRGB", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeLosslessRGB", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeLosslessRGB([InAttribute()] IntPtr rgb, int width, int height, int stride, ref IntPtr output);
 
 
@@ -488,7 +488,7 @@ namespace Imazen.WebP.Extern
         ///height: int
         ///stride: int
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeLosslessBGR", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeLosslessBGR", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeLosslessBGR([InAttribute()] IntPtr bgr, int width, int height, int stride, ref IntPtr output);
 
 
@@ -498,7 +498,7 @@ namespace Imazen.WebP.Extern
         ///height: int
         ///stride: int
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeLosslessRGBA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeLosslessRGBA", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeLosslessRGBA([InAttribute()] IntPtr rgba, int width, int height, int stride, ref IntPtr output);
 
 
@@ -508,7 +508,7 @@ namespace Imazen.WebP.Extern
         ///height: int
         ///stride: int
         ///output: uint8_t**
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncodeLosslessBGRA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncodeLosslessBGRA", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr WebPEncodeLosslessBGRA([InAttribute()] IntPtr bgra, int width, int height, int stride, ref IntPtr output);
 
 
@@ -517,29 +517,29 @@ namespace Imazen.WebP.Extern
         ///param1: WebPPreset->Anonymous_017d4167_f53e_4b3d_b029_592ff5c3f80b
         ///param2: float
         ///param3: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPConfigInitInternal", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPConfigInitInternal", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPConfigInitInternal(ref WebPConfig param0, WebPPreset param1, float param2, int param3);
 
 
         /// Return Type: int
         ///config: WebPConfig*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPConfigLosslessPreset", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPConfigLosslessPreset", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPConfigLosslessPreset(ref WebPConfig config);
 
         /// Return Type: int
         ///config: WebPConfig*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPValidateConfig", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPValidateConfig", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPValidateConfig(ref WebPConfig config);
 
 
         /// Return Type: void
         ///writer: WebPMemoryWriter*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPMemoryWriterInit", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPMemoryWriterInit", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WebPMemoryWriterInit(ref WebPMemoryWriter writer);
 
         /// Return Type: void
         ///writer: WebPMemoryWriter*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPMemoryWriterClear", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPMemoryWriterClear", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WebPMemoryWriterClear(ref WebPMemoryWriter writer);
 
 
@@ -547,33 +547,33 @@ namespace Imazen.WebP.Extern
         ///data: uint8_t*
         ///data_size: size_t->unsigned int
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPMemoryWrite", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPMemoryWrite", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPMemoryWrite([InAttribute()] IntPtr data, UIntPtr data_size, ref WebPPicture picture);
 
 
         /// Return Type: int
         ///param0: WebPPicture*
         ///param1: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureInitInternal", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureInitInternal", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureInitInternal(ref WebPPicture param0, int param1);
 
 
         /// Return Type: int
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureAlloc", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureAlloc", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureAlloc(ref WebPPicture picture);
 
 
         /// Return Type: void
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureFree", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureFree", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WebPPictureFree(ref WebPPicture picture);
 
 
         /// Return Type: int
         ///src: WebPPicture*
         ///dst: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureCopy", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureCopy", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureCopy(ref WebPPicture src, ref WebPPicture dst);
 
 
@@ -595,7 +595,7 @@ namespace Imazen.WebP.Extern
         /// <param name="metric_type">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
         /// <param name="result"></param>
         /// <returns></returns>
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureDistortion", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureDistortion", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureDistortion(ref WebPPicture src, ref WebPPicture reference, int metric_type, ref float result);
 
 
@@ -607,7 +607,7 @@ namespace Imazen.WebP.Extern
         ///top: int
         ///width: int
         ///height: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureCrop", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureCrop", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureCrop(ref WebPPicture picture, int left, int top, int width, int height);
 
 
@@ -618,13 +618,13 @@ namespace Imazen.WebP.Extern
         ///width: int
         ///height: int
         ///dst: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureView", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureView", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureView(ref WebPPicture src, int left, int top, int width, int height, ref WebPPicture dst);
 
 
         /// Return Type: int
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureIsView", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureIsView", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureIsView(ref WebPPicture picture);
 
 
@@ -635,7 +635,7 @@ namespace Imazen.WebP.Extern
         ///pic: WebPPicture*
         ///width: int
         ///height: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureRescale", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureRescale", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureRescale(ref WebPPicture pic, int width, int height);
 
 
@@ -643,7 +643,7 @@ namespace Imazen.WebP.Extern
         ///picture: WebPPicture*
         ///rgb: uint8_t*
         ///rgb_stride: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureImportRGB", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureImportRGB", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureImportRGB(ref WebPPicture picture, [InAttribute()] IntPtr rgb, int rgb_stride);
 
 
@@ -651,7 +651,7 @@ namespace Imazen.WebP.Extern
         ///picture: WebPPicture*
         ///rgba: uint8_t*
         ///rgba_stride: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureImportRGBA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureImportRGBA", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureImportRGBA(ref WebPPicture picture, [InAttribute()] IntPtr rgba, int rgba_stride);
 
 
@@ -660,10 +660,10 @@ namespace Imazen.WebP.Extern
         /// method is roughly 2x slower than WebPPictureARGBToYUVA() but produces better
         /// YUV representation.
         /// Returns false in case of error.
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureSmartARGBToYUVA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureSmartARGBToYUVA", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureSmartARGBToYUVA(ref WebPPicture picture);
 
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureImportRGBX", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureImportRGBX", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureImportRGBX(ref WebPPicture picture, [InAttribute()] IntPtr rgbx, int rgbx_stride);
 
 
@@ -672,7 +672,7 @@ namespace Imazen.WebP.Extern
         ///picture: WebPPicture*
         ///bgr: uint8_t*
         ///bgr_stride: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureImportBGR", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureImportBGR", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureImportBGR(ref WebPPicture picture, [InAttribute()] IntPtr bgr, int bgr_stride);
 
 
@@ -680,7 +680,7 @@ namespace Imazen.WebP.Extern
         ///picture: WebPPicture*
         ///bgra: uint8_t*
         ///bgra_stride: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureImportBGRA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureImportBGRA", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureImportBGRA(ref WebPPicture picture, [InAttribute()] IntPtr bgra, int bgra_stride);
 
 
@@ -688,39 +688,39 @@ namespace Imazen.WebP.Extern
         ///picture: WebPPicture*
         ///bgrx: uint8_t*
         ///bgrx_stride: int
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureImportBGRX", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureImportBGRX", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureImportBGRX(ref WebPPicture picture, [InAttribute()] IntPtr bgrx, int bgrx_stride);
 
 
         /// Return Type: int
         ///picture: WebPPicture*
         ///colorspace: WebPEncCSP->Anonymous_84ce7065_fe91_48b4_93d8_1f0e84319dba
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureARGBToYUVA", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureARGBToYUVA", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureARGBToYUVA(ref WebPPicture picture, WebPEncCSP colorspace);
 
 
         /// Return Type: int
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureYUVAToARGB", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureYUVAToARGB", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureYUVAToARGB(ref WebPPicture picture);
 
 
         /// Return Type: void
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPCleanupTransparentArea", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPCleanupTransparentArea", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WebPCleanupTransparentArea(ref WebPPicture picture);
 
 
         /// Return Type: int
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPPictureHasTransparency", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPPictureHasTransparency", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPPictureHasTransparency(ref WebPPicture picture);
 
 
         /// Return Type: int
         ///config: WebPConfig*
         ///picture: WebPPicture*
-        [DllImportAttribute("libwebp", EntryPoint = "WebPEncode", CallingConvention = CallingConvention.Cdecl)]
+        [DllImportAttribute("MuPDFLib", EntryPoint = "WebPEncode", CallingConvention = CallingConvention.Cdecl)]
         public static extern int WebPEncode(ref WebPConfig config, ref WebPPicture picture);
 
     }
