@@ -103,12 +103,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleEncoder.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\platform\win32\MuPDFLib.vcxproj">
-      <Project>{c21b464f-7799-4b39-8ca6-67ce0468966c}</Project>
-      <Name>MuPDFLib</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
