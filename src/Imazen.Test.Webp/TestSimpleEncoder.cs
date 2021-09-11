@@ -29,15 +29,16 @@ namespace Imazen.Test.WebP
             var outFileName = "testimageout.webp";
             File.Delete(outFileName);
 
-            Bitmap mBitmap;
             FileStream outStream = new FileStream(outFileName, FileMode.Create);
             using (Stream BitmapStream = System.IO.File.Open(fileName, System.IO.FileMode.Open))
             {
-                Image img = Image.FromStream(BitmapStream);
-
-                mBitmap = new Bitmap(img);
-
-                encoder.Encode(mBitmap, outStream, 100);
+				using (Image img = Image.FromStream(BitmapStream))
+				{
+					using (Bitmap mBitmap = new Bitmap(img))
+					{
+						encoder.Encode(mBitmap, outStream, 100);
+					}
+				}
             }
 
             FileInfo finfo = new FileInfo(outFileName);
