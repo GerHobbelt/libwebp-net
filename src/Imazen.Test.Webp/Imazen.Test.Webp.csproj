@@ -127,8 +127,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\..\..\..\..\packages\xunit.analyzers.1.0.0\analyzers\dotnet\cs\xunit.analyzers.dll" />
-    <Analyzer Include="..\..\..\..\..\packages\xunit.analyzers.1.0.0\analyzers\dotnet\cs\xunit.analyzers.fixes.dll" />
+    <Analyzer Include="..\..\..\..\..\packages\xunit.analyzers.1.1.0\analyzers\dotnet\cs\xunit.analyzers.dll" />
+    <Analyzer Include="..\..\..\..\..\packages\xunit.analyzers.1.1.0\analyzers\dotnet\cs\xunit.analyzers.fixes.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Choose>
@@ -177,10 +177,15 @@
   <Import Project="..\..\packages\xunit.runner.visualstudio.2.1.0\build\$(__paket__xunit_runner_visualstudio_targets).targets" Condition="Exists('..\..\packages\xunit.runner.visualstudio.2.1.0\build\$(__paket__xunit_runner_visualstudio_targets).targets')" Label="Paket" />
   <Import Project="..\..\packages\xunit.core.2.4.1\build\xunit.core.targets" Condition="Exists('..\..\packages\xunit.core.2.4.1\build\xunit.core.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>mkdir $(TargetDir)x86\
-mkdir $(TargetDir)x64\
-copy $(SolutionDir)bin\Release-Unicode-32bit-x86\MuPDFLib.* $(TargetDir)x86\
-copy $(SolutionDir)bin\Release-Unicode-64bit-x64\MuPDFLib.* $(TargetDir)x64\</PostBuildEvent>
+    <PostBuildEvent>if not exist $(TargetDir)x86\ mkdir $(TargetDir)x86\
+if not exist $(TargetDir)x64\ mkdir $(TargetDir)x64\
+
+if exist $(SolutionDir)bin\Release-Unicode-32bit-x86\ copy $(SolutionDir)bin\Release-Unicode-32bit-x86\MuPDFLib.* $(TargetDir)x86\
+if exist $(SolutionDir)bin\Release-Unicode-64bit-x64\ copy $(SolutionDir)bin\Release-Unicode-64bit-x64\MuPDFLib.* $(TargetDir)x64\
+
+if not exist $(SolutionDir)bin\Release-Unicode-32bit-x86\ echo MISSING: $(SolutionDir)bin\Release-Unicode-32bit-x86\MuPDFLib.*
+if not exist $(SolutionDir)bin\Release-Unicode-64bit-x64\ echo MISSING: $(SolutionDir)bin\Release-Unicode-64bit-x64\MuPDFLib.*
+</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
