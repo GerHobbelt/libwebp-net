@@ -53,12 +53,19 @@ namespace Imazen.WebP
                     () => NativeMethods.WebPGetInfo(dataPtr, dataSize, ref w, ref h)) == 0)
                     throw new Exception("Invalid WebP header detected");
 
+                if (w <= 0 || h <= 0 || w > NativeMethods.WEBP_MAX_DIMENSION || h > NativeMethods.WEBP_MAX_DIMENSION)
+                    throw new InvalidDataException($"WebP dimensions out of range: {w}x{h}");
+
                 width = w;
                 height = h;
 
                 int bytesPerPixel = (format == WebPPixelFormat.Bgr || format == WebPPixelFormat.Rgb) ? 3 : 4;
-                int stride = w * bytesPerPixel;
-                byte[] output = new byte[stride * h];
+                long strideL = (long)w * bytesPerPixel;
+                long sizeL = strideL * h;
+                if (sizeL > int.MaxValue)
+                    throw new InvalidDataException($"Decoded buffer would exceed int.MaxValue: {sizeL} bytes");
+                int stride = (int)strideL;
+                byte[] output = new byte[(int)sizeL];
 
                 var outHandle = GCHandle.Alloc(output, GCHandleType.Pinned);
                 try
@@ -90,7 +97,14 @@ namespace Imazen.WebP
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (output == null) throw new ArgumentNullException(nameof(output));
+            if (stride <= 0) throw new ArgumentOutOfRangeException(nameof(stride));
 
+            // Verify the output buffer is large enough for the declared image
+            // before handing libwebp the raw pointer. libwebp itself checks
+            // output_buffer_size, but doing the check here makes the failure
+            // mode a managed exception (with parameter name) rather than a
+            // silent WebPDecode... return-NULL.
+            int w = 0, h = 0;
             var dataHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
             var outHandle = GCHandle.Alloc(output, GCHandleType.Pinned);
             try
@@ -98,8 +112,20 @@ namespace Imazen.WebP
                 IntPtr dataPtr = dataHandle.AddrOfPinnedObject();
                 IntPtr outPtr = outHandle.AddrOfPinnedObject();
                 UIntPtr dataSize = (UIntPtr)data.Length;
-                UIntPtr outSize = (UIntPtr)output.Length;
 
+                if (NativeLibraryLoader.FixDllNotFoundException("webp",
+                    () => NativeMethods.WebPGetInfo(dataPtr, dataSize, ref w, ref h)) == 0)
+                    throw new InvalidDataException("Invalid WebP header detected");
+                if (w <= 0 || h <= 0 || w > NativeMethods.WEBP_MAX_DIMENSION || h > NativeMethods.WEBP_MAX_DIMENSION)
+                    throw new InvalidDataException($"WebP dimensions out of range: {w}x{h}");
+
+                long needed = (long)stride * h;
+                if (output.Length < needed)
+                    throw new ArgumentException(
+                        $"output.Length {output.Length} is smaller than stride*height ({needed}).",
+                        nameof(output));
+
+                UIntPtr outSize = (UIntPtr)output.Length;
                 IntPtr result = DecodeInto(dataPtr, dataSize, outPtr, outSize, stride, format);
                 if (outPtr != result)
                     throw new Exception("Failed to decode WebP image");
@@ -113,7 +139,8 @@ namespace Imazen.WebP
 
         /// <summary>
         /// Decodes WebP data from a stream to a BGRA pixel buffer.
-        /// Reads the entire stream into memory first.
+        /// Reads the entire stream into memory first, capped by
+        /// <see cref="WebPLimits.MaxDecodeStreamBytes"/>.
         /// </summary>
         public static byte[] DecodeFromStream(Stream stream, out int width, out int height)
         {
@@ -122,12 +149,23 @@ namespace Imazen.WebP
 
         /// <summary>
         /// Decodes WebP data from a stream to a pixel buffer in the specified format.
-        /// Reads the entire stream into memory first.
+        /// Reads the entire stream into memory first, capped by
+        /// <see cref="WebPLimits.MaxDecodeStreamBytes"/>.
         /// </summary>
         public static byte[] DecodeFromStream(Stream stream, out int width, out int height, WebPPixelFormat format)
         {
+            return DecodeFromStream(stream, out width, out height, format, WebPLimits.MaxDecodeStreamBytes);
+        }
+
+        /// <summary>
+        /// Decodes WebP data from a stream to a pixel buffer in the specified format,
+        /// with a caller-supplied maximum buffered-data size.
+        /// </summary>
+        public static byte[] DecodeFromStream(Stream stream, out int width, out int height, WebPPixelFormat format, long maxBytes)
+        {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
-            byte[] data = ReadStreamFully(stream);
+            if (maxBytes <= 0) throw new ArgumentOutOfRangeException(nameof(maxBytes));
+            byte[] data = ReadStreamFully(stream, maxBytes);
             return Decode(data, out width, out height, format);
         }
 
@@ -171,17 +209,29 @@ namespace Imazen.WebP
             }
         }
 
-        private static byte[] ReadStreamFully(Stream stream)
+        private static byte[] ReadStreamFully(Stream stream, long maxBytes)
         {
             if (stream is MemoryStream ms && ms.Position == 0)
+            {
+                if (ms.Length > maxBytes)
+                    throw new InvalidDataException(
+                        $"Encoded WebP data {ms.Length} bytes exceeds cap of {maxBytes} bytes.");
                 return ms.ToArray();
+            }
 
             using (var output = new MemoryStream())
             {
                 byte[] buffer = new byte[8192];
+                long total = 0;
                 int read;
                 while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    total += read;
+                    if (total > maxBytes)
+                        throw new InvalidDataException(
+                            $"Encoded WebP data exceeds cap of {maxBytes} bytes.");
                     output.Write(buffer, 0, read);
+                }
                 return output.ToArray();
             }
         }

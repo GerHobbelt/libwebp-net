@@ -11,22 +11,28 @@ namespace Imazen.WebP
     public static class WebPEncoder
     {
         // Prevent delegate from being GC'd during encoding
-        [ThreadStatic] private static WebPWriterFunction? _writerDelegate;
+        private static readonly WebPWriterFunction _writerDelegate = ManagedWriter;
 
-        private class EncodeOutput
+        private sealed class EncodeOutput(Stream stream)
         {
-            public MemoryStream Stream = new MemoryStream();
+            public readonly Stream Stream = stream;
         }
 
         private static int ManagedWriter(IntPtr data, UIntPtr dataSize, ref WebPPicture picture)
         {
             int size = (int)(uint)dataSize;
             if (size <= 0) return 1;
-            byte[] buffer = new byte[size];
-            Marshal.Copy(data, buffer, 0, size);
             var handle = GCHandle.FromIntPtr(picture.custom_ptr);
             var ctx = (EncodeOutput)handle.Target!;
+#if NETCOREAPP
+            unsafe {
+                ctx.Stream.Write(new ReadOnlySpan<byte>((void*)data, size));
+            }
+#else
+            byte[] buffer = new byte[size];
+            Marshal.Copy(data, buffer, 0, size);
             ctx.Stream.Write(buffer, 0, size);
+#endif
             return 1;
         }
 
@@ -46,6 +52,7 @@ namespace Imazen.WebP
             if (pixels == null) throw new ArgumentNullException(nameof(pixels));
             if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
             if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+            ValidatePixelBuffer(pixels, width, height, stride, format);
 
             var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
             try
@@ -69,7 +76,11 @@ namespace Imazen.WebP
 
                 try
                 {
-                    byte[] output = new byte[(int)(ulong)length];
+                    ulong len = (ulong)length;
+                    if (len > int.MaxValue)
+                        throw new InvalidOperationException(
+                            $"libwebp produced {len} bytes — exceeds int.MaxValue and cannot be returned as a byte[].");
+                    byte[] output = new byte[(int)len];
                     Marshal.Copy(result, output, 0, output.Length);
                     return output;
                 }
@@ -170,10 +181,23 @@ namespace Imazen.WebP
         public static byte[] Encode(byte[] pixels, int width, int height, int stride,
             WebPPixelFormat format, WebPEncoderConfig config)
         {
+            var outputStream = new MemoryStream();
+            Encode(pixels, width, height, stride, format, config, outputStream);
+            return outputStream.ToArray();
+        }
+
+        /// <summary>
+        /// Encodes raw pixel data using advanced WebPEncoderConfig settings and writes to a stream.
+        /// </summary>
+        public static void Encode(byte[] pixels, int width, int height, int stride,
+            WebPPixelFormat format, WebPEncoderConfig config, Stream outputStream)
+        {
             if (pixels == null) throw new ArgumentNullException(nameof(pixels));
             if (config == null) throw new ArgumentNullException(nameof(config));
             if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
             if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+            if (outputStream == null) throw new ArgumentNullException(nameof(outputStream));
+            ValidatePixelBuffer(pixels, width, height, stride, format);
 
             if (!config.Validate())
                 throw new ArgumentException("Invalid WebP encoder configuration", nameof(config));
@@ -193,10 +217,8 @@ namespace Imazen.WebP
             picture.use_argb = 1;
 
             var pixelHandle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-            var output = new EncodeOutput();
+            var output = new EncodeOutput(outputStream);
             var outputHandle = GCHandle.Alloc(output);
-            // Keep delegate alive during encoding
-            _writerDelegate = ManagedWriter;
             try
             {
                 IntPtr pixelPtr = pixelHandle.AddrOfPinnedObject();
@@ -233,8 +255,6 @@ namespace Imazen.WebP
 
                 if (encodeResult == 0)
                     throw new Exception($"WebP encode failed with error: {picture.error_code}");
-
-                return output.Stream.ToArray();
             }
             finally
             {
@@ -245,19 +265,33 @@ namespace Imazen.WebP
                 });
                 pixelHandle.Free();
                 outputHandle.Free();
-                _writerDelegate = null;
             }
         }
 
-        /// <summary>
-        /// Encodes raw pixel data using advanced WebPEncoderConfig settings and writes to a stream.
-        /// </summary>
-        public static void Encode(byte[] pixels, int width, int height, int stride,
-            WebPPixelFormat format, WebPEncoderConfig config, Stream outputStream)
+        // Guards libwebp against an out-of-bounds read into the managed heap.
+        // libwebp reads stride * height bytes from the pinned pointer; the
+        // managed buffer must be at least that large. We also enforce the
+        // libwebp dimension cap so width*height won't silently wrap.
+        private static void ValidatePixelBuffer(byte[] pixels, int width, int height, int stride, WebPPixelFormat format)
         {
-            if (outputStream == null) throw new ArgumentNullException(nameof(outputStream));
-            byte[] encoded = Encode(pixels, width, height, stride, format, config);
-            outputStream.Write(encoded, 0, encoded.Length);
+            if (width > NativeMethods.WEBP_MAX_DIMENSION || height > NativeMethods.WEBP_MAX_DIMENSION)
+                throw new ArgumentOutOfRangeException(nameof(width),
+                    $"width/height must be <= {NativeMethods.WEBP_MAX_DIMENSION}; got {width}x{height}.");
+
+            int bytesPerPixel = (format == WebPPixelFormat.Rgb || format == WebPPixelFormat.Bgr) ? 3 : 4;
+            long minStride = (long)width * bytesPerPixel;
+            // libwebp accepts negative strides only for bottom-up bitmaps in
+            // some entry points; we don't expose those entry points and require
+            // a positive stride large enough for one row.
+            if (stride < minStride)
+                throw new ArgumentOutOfRangeException(nameof(stride),
+                    $"stride {stride} is smaller than width*bytesPerPixel ({minStride}).");
+
+            long needed = (long)stride * height;
+            if (pixels.Length < needed)
+                throw new ArgumentException(
+                    $"pixels.Length {pixels.Length} is smaller than stride*height ({needed}).",
+                    nameof(pixels));
         }
     }
 }
