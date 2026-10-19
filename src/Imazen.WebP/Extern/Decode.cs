@@ -582,6 +582,11 @@ namespace Imazen.WebP.Extern
         [DllImportAttribute("MuPDFLib", EntryPoint = "WebPDecode", CallingConvention = CallingConvention.Cdecl)]
         public static extern VP8StatusCode WebPDecode([InAttribute()] IntPtr data, UIntPtr data_size, ref WebPDecoderConfig config);
 
+        /// Return Type: int
+        ///config: WebPDecoderConfig*
+        [DllImportAttribute("libwebp", EntryPoint = "WebPValidateDecoderConfig", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int WebPValidateDecoderConfig(ref WebPDecoderConfig config);
+
     }
 
 
