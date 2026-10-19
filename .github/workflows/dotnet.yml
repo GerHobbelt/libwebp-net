@@ -46,10 +46,10 @@ jobs:
             arch: x86
             run_settings: '<RunSettings><RunConfiguration><TargetPlatform>x86</TargetPlatform></RunConfiguration></RunSettings>'
 
-          # Windows ARM64
+          # Windows ARM64 (.NET 4.8.1+ for Framework support)
           - os: windows-11-arm
             rid: win-arm64
-            test_frameworks: 'net8.0;net10.0'
+            test_frameworks: 'net48;net8.0;net10.0'
             arch: arm64
 
           # Linux x64
@@ -98,15 +98,14 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/releases" | \
               jq -r '[.[] | select(.tag_name | startswith("native-v"))][0].tag_name // empty')
             if [ -z "$TAG" ]; then
-              echo "No native release found — tests will rely on local DLLs"
-              echo "tag=" >> "$GITHUB_OUTPUT"
+              echo "::error::No native release found. Run build-libwebp.yml first."
+              exit 1
             else
               echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
             fi
           fi
 
       - name: Download native binaries from GitHub release
-        if: steps.native.outputs.tag != ''
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -150,32 +149,32 @@ jobs:
 
       - name: Test (x86 with runsettings)
         if: matrix.run_settings != ''
-        # Tests requiring native DLLs will fail if no native release exists yet
-        continue-on-error: ${{ steps.native.outputs.tag == '' }}
         shell: bash
         run: |
           IFS=';' read -ra FRAMEWORKS <<< "${{ matrix.test_frameworks }}"
+          FAIL=0
           for fw in "${FRAMEWORKS[@]}"; do
             echo "::group::Testing $fw (x86)"
             dotnet test --configuration Release --no-build --verbosity normal \
-              -f "$fw" --settings test.runsettings
+              -f "$fw" --settings test.runsettings || FAIL=1
             echo "::endgroup::"
           done
+          exit $FAIL
         env:
           DOTNET_SYSTEM_DRAWING_COMMON_ENABLE_UNIX_SUPPORT: false
 
       - name: Test
         if: matrix.run_settings == ''
-        # Tests requiring native DLLs will fail if no native release exists yet
-        continue-on-error: ${{ steps.native.outputs.tag == '' }}
         shell: bash
         run: |
           IFS=';' read -ra FRAMEWORKS <<< "${{ matrix.test_frameworks }}"
+          FAIL=0
           for fw in "${FRAMEWORKS[@]}"; do
             echo "::group::Testing $fw"
-            dotnet test --configuration Release --no-build --verbosity normal -f "$fw"
+            dotnet test --configuration Release --no-build --verbosity normal -f "$fw" || FAIL=1
             echo "::endgroup::"
           done
+          exit $FAIL
         env:
           DOTNET_SYSTEM_DRAWING_COMMON_ENABLE_UNIX_SUPPORT: false
 
@@ -201,11 +200,14 @@ jobs:
             TAG=$(curl -sL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/releases" | \
               jq -r '[.[] | select(.tag_name | startswith("native-v"))][0].tag_name // empty')
+            if [ -z "$TAG" ]; then
+              echo "::error::No native release found. Run build-libwebp.yml first."
+              exit 1
+            fi
             echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download native binaries
-        if: steps.native.outputs.tag != ''
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -244,8 +246,6 @@ jobs:
           }
 
       - name: Run tests with PageHeap
-        # Tests requiring native DLLs will fail if no native release exists yet
-        continue-on-error: ${{ steps.native.outputs.tag == '' }}
         run: dotnet test --configuration Release --no-build --verbosity normal -f net8.0
         env:
           DOTNET_SYSTEM_DRAWING_COMMON_ENABLE_UNIX_SUPPORT: false
