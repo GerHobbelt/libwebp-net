@@ -86,6 +86,17 @@ jobs:
             8.0.x
             10.0.x
 
+      - name: Install x86 .NET runtime for testing
+        if: matrix.arch == 'x86'
+        shell: pwsh
+        run: |
+          # VSTest with <TargetPlatform>x86</TargetPlatform> needs an x86 dotnet host
+          # to launch the testhost process for .NET Core TFMs.
+          $installScript = "$env:TEMP\dotnet-install.ps1"
+          Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installScript
+          & $installScript -Channel 8.0 -Architecture x86 -Runtime dotnet `
+            -InstallDir "${env:ProgramFiles(x86)}\dotnet"
+
       - name: Determine native release tag
         id: native
         shell: bash
@@ -135,8 +146,55 @@ jobs:
             ls -la "$DEST"
           done
 
+      - name: Fix macOS dylib rpaths
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          # The native build embeds build-directory @rpath references that don't
+          # exist at runtime. Rewrite dependencies to use @loader_path so each
+          # dylib finds its dependencies in the same directory.
+          find src/Imazen.WebP.NativeRuntime.*/runtimes/*/native/ -name "*.dylib" 2>/dev/null | while read dylib; do
+            dir=$(dirname "$dylib")
+            otool -L "$dylib" 2>/dev/null | awk '/@rpath\//{print $1}' | while read dep; do
+              base=$(basename "$dep")
+              # Strip version: libfoo.N.dylib → libfoo.dylib
+              unversioned=$(echo "$base" | sed -E 's/\.[0-9]+\.dylib/.dylib/')
+              if [ -f "$dir/$unversioned" ]; then
+                install_name_tool -change "$dep" "@loader_path/$unversioned" "$dylib"
+              elif [ -f "$dir/$base" ]; then
+                install_name_tool -change "$dep" "@loader_path/$base" "$dylib"
+              fi
+            done
+          done
+
       - name: Build
         run: dotnet build --configuration Release
+
+      - name: Copy native binaries to test output
+        shell: bash
+        run: |
+          # NativeRuntime packages use NuGet-only conventions (.targets, runtimes/ graph)
+          # that don't apply via ProjectReference. Copy native files to where
+          # NativeLibraryLoader will find them: runtimes/{rid}/native/ under test output.
+          # Also copy the matching RID directly to the output root for .NET Framework
+          # DllImport resolution (which doesn't search runtimes/ subdirectories).
+          MATCHING_RID="${{ matrix.rid }}"
+          for RID_DIR in src/Imazen.WebP.NativeRuntime.*/runtimes/*/native/; do
+            if [ -d "$RID_DIR" ] && ls "$RID_DIR"/*.* >/dev/null 2>&1; then
+              TEMP="${RID_DIR%/native/}"
+              RID="${TEMP##*/}"
+              for TFM_DIR in src/Imazen.Test.Webp/bin/Release/*/; do
+                DEST="${TFM_DIR}runtimes/${RID}/native/"
+                mkdir -p "$DEST"
+                cp "$RID_DIR"* "$DEST/"
+                # Copy matching RID to output root for .NET Framework DllImport
+                if [ "$RID" = "$MATCHING_RID" ]; then
+                  cp "$RID_DIR"* "$TFM_DIR/"
+                fi
+              done
+              echo "Copied ${RID} native files to test output directories"
+            fi
+          done
 
       - name: Create .runsettings for x86
         if: matrix.run_settings != ''
@@ -162,6 +220,7 @@ jobs:
           exit $FAIL
         env:
           DOTNET_SYSTEM_DRAWING_COMMON_ENABLE_UNIX_SUPPORT: false
+          DOTNET_ROOT_X86: C:\Program Files (x86)\dotnet
 
       - name: Test
         if: matrix.run_settings == ''
@@ -177,6 +236,55 @@ jobs:
           exit $FAIL
         env:
           DOTNET_SYSTEM_DRAWING_COMMON_ENABLE_UNIX_SUPPORT: false
+
+      # ── Package consumption tests ──────────────────────────────────────
+      # Verify that NuGet packages work end-to-end:
+      #   .NET Core: runtimes/{rid}/native/ resolved via deps.json
+      #   .NET Framework: .targets copies native files to output directory
+      - name: Pack NuGet packages for consumption test
+        if: success() || failure()
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          RID="${{ matrix.rid }}"
+          dotnet pack src/Imazen.WebP/Imazen.WebP.csproj -c Release -o artifacts/ --no-build
+          # NativeRuntime projects aren't part of the solution build, so they need restore
+          dotnet pack "src/Imazen.WebP.NativeRuntime.${RID}/Imazen.WebP.NativeRuntime.${RID}.csproj" \
+            -c Release -o artifacts/
+
+      - name: Test package consumption
+        if: success() || failure()
+        shell: bash
+        run: |
+          RID="${{ matrix.rid }}"
+          cd test/PackageConsumption
+
+          # Determine frameworks and extra args
+          EXTRA_ARGS=""
+          if [ "${{ matrix.arch }}" = "x86" ]; then
+            # x86: only test .NET Framework (.NET Core x86 requires an x86 host)
+            FRAMEWORKS="net472;net48"
+            EXTRA_ARGS="-p:PlatformTarget=x86"
+          elif [ "${{ matrix.arch }}" = "arm64" ] && [[ "${{ matrix.rid }}" == win-* ]]; then
+            # Windows ARM64: .NET Framework runs under x64 emulation, so it can't
+            # load arm64 native DLLs. Only test .NET Core frameworks here.
+            FRAMEWORKS=$(echo "${{ matrix.test_frameworks }}" | tr ';' '\n' | grep -v '^net4' | tr '\n' ';' | sed 's/;$//')
+          else
+            FRAMEWORKS="${{ matrix.test_frameworks }}"
+          fi
+
+          dotnet restore -p:NativeRid=$RID $EXTRA_ARGS
+
+          dotnet build -c Release -p:NativeRid=$RID $EXTRA_ARGS --no-restore
+
+          IFS=';' read -ra FW_ARRAY <<< "$FRAMEWORKS"
+          FAIL=0
+          for fw in "${FW_ARRAY[@]}"; do
+            echo "::group::Package consumption: $fw ($RID)"
+            dotnet run -c Release -f "$fw" -p:NativeRid=$RID $EXTRA_ARGS --no-build || FAIL=1
+            echo "::endgroup::"
+          done
+          exit $FAIL
 
   # Windows heap corruption detection via PageHeap
   heap-validation:
@@ -227,6 +335,26 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release
 
+      - name: Copy native binaries to test output
+        shell: bash
+        run: |
+          for RID_DIR in src/Imazen.WebP.NativeRuntime.*/runtimes/*/native/; do
+            if [ -d "$RID_DIR" ] && ls "$RID_DIR"/*.* >/dev/null 2>&1; then
+              TEMP="${RID_DIR%/native/}"
+              RID="${TEMP##*/}"
+              for TFM_DIR in src/Imazen.Test.Webp/bin/Release/*/; do
+                DEST="${TFM_DIR}runtimes/${RID}/native/"
+                mkdir -p "$DEST"
+                cp "$RID_DIR"* "$DEST/"
+                # Copy win-x64 to output root for .NET Framework DllImport
+                if [ "$RID" = "win-x64" ]; then
+                  cp "$RID_DIR"* "$TFM_DIR/"
+                fi
+              done
+              echo "Copied ${RID} native files to test output directories"
+            fi
+          done
+
       - name: Enable PageHeap for test host
         shell: pwsh
         run: |
@@ -252,7 +380,7 @@ jobs:
 
   pack-and-publish:
     needs: build-and-test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     # Run when: manual release (v* tag), or auto-triggered by build-libwebp (workflow_dispatch with inputs)
     if: >-
       github.event_name == 'release' ||
@@ -326,16 +454,28 @@ jobs:
             unzip -o "/tmp/native-dl/libwebp-${SEMVER}-${RID}.zip" -d "$DEST"
           done
 
-      - name: Pack managed packages
+      - name: Build managed library
+        shell: bash
         run: |
           API_VERSION="${{ steps.versions.outputs.api_version }}"
           EXTRA_ARGS=""
           if [ -n "$API_VERSION" ]; then
             EXTRA_ARGS="-p:Version=${API_VERSION}"
           fi
-          dotnet pack src/Imazen.WebP/Imazen.WebP.csproj --configuration Release $EXTRA_ARGS -o packages/
+          dotnet build src/Imazen.WebP/Imazen.WebP.csproj --configuration Release $EXTRA_ARGS
+
+      - name: Pack managed packages
+        shell: bash
+        run: |
+          API_VERSION="${{ steps.versions.outputs.api_version }}"
+          EXTRA_ARGS=""
+          if [ -n "$API_VERSION" ]; then
+            EXTRA_ARGS="-p:Version=${API_VERSION}"
+          fi
+          dotnet pack src/Imazen.WebP/Imazen.WebP.csproj --configuration Release --no-build $EXTRA_ARGS -o packages/
 
       - name: Pack native runtime packages
+        shell: bash
         run: |
           NATIVE_VERSION="${{ steps.versions.outputs.native_version }}"
           EXTRA_ARGS=""
@@ -365,6 +505,7 @@ jobs:
         if: >-
           github.event_name == 'release' ||
           (github.event_name == 'workflow_dispatch' && inputs.libwebp_version != '')
+        shell: bash
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |

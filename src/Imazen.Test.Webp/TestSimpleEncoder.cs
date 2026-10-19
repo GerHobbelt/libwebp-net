@@ -4,6 +4,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using Xunit;
 using Imazen.WebP;
+using Imazen.Test.Webp;
 
 namespace Imazen.Test.WebP
 {
@@ -18,14 +19,14 @@ namespace Imazen.Test.WebP
             Assert.Contains(".", version);
         }
 
-        [Fact]
+        [WindowsFact]
         public void TestEncodeJpegToWebP()
         {
             var encoder = new SimpleEncoder();
             var fileName = "testimage.jpg";
             Assert.True(File.Exists(fileName), $"Test image not found: {fileName}");
 
-            using (var bitmapStream = File.Open(fileName, FileMode.Open))
+            using (var bitmapStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var img = Image.FromStream(bitmapStream))
             using (var bitmap = new Bitmap(img))
             using (var outStream = new MemoryStream())
@@ -43,7 +44,7 @@ namespace Imazen.Test.WebP
             }
         }
 
-        [Theory]
+        [WindowsTheory]
         [InlineData(0)]
         [InlineData(50)]
         [InlineData(75)]
@@ -62,7 +63,7 @@ namespace Imazen.Test.WebP
             }
         }
 
-        [Fact]
+        [WindowsFact]
         public void TestLosslessEncode()
         {
             var encoder = new SimpleEncoder();
@@ -77,7 +78,7 @@ namespace Imazen.Test.WebP
             }
         }
 
-        [Fact]
+        [WindowsFact]
         public void TestEncode24bppRgb()
         {
             var encoder = new SimpleEncoder();
@@ -92,7 +93,7 @@ namespace Imazen.Test.WebP
             }
         }
 
-        [Fact]
+        [WindowsFact]
         public void TestEncodeNonStandardPixelFormat()
         {
             var encoder = new SimpleEncoder();
