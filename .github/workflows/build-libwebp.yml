@@ -98,8 +98,9 @@ jobs:
           - os: macos-latest
             rid: osx-arm64
             lib_ext: dylib
-          - os: macos-13
+          - os: macos-14
             rid: osx-x64
+            cmake_flags: '-DCMAKE_OSX_ARCHITECTURES=x86_64'
             lib_ext: dylib
 
     runs-on: ${{ matrix.os }}
@@ -148,7 +149,8 @@ jobs:
           cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
             -DWEBP_BUILD_ANIM_UTILS=OFF -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF \
             -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF \
-            -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF
+            -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF -DWEBP_BUILD_EXTRAS=OFF \
+            ${{ matrix.cmake_flags }}
           cmake --build . --config Release
 
       - name: Locate and copy built libraries
@@ -321,14 +323,12 @@ jobs:
           RELEASE_TAG="native-v${SEMVER}"
           echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
 
-          # Package each platform's native binary
+          # Package each platform's native libraries (all 4: webp, webpmux, webpdemux, sharpyuv)
           mkdir -p release-assets
           for rid_dir in artifacts/native-*; do
             RID=$(basename "$rid_dir" | sed 's/^native-//')
-            FILENAME=$(ls "$rid_dir/" | head -1)
-            # Zip with platform-specific name
             cd "$rid_dir"
-            zip -j "../../release-assets/libwebp-${SEMVER}-${RID}.zip" "$FILENAME"
+            zip -j "../../release-assets/libwebp-${SEMVER}-${RID}.zip" *
             cd ../..
           done
           ls -la release-assets/
@@ -341,30 +341,41 @@ jobs:
           RELEASE_TAG="native-v${SEMVER}"
           LIBWEBP_TAG="${{ needs.resolve-version.outputs.libwebp_tag }}"
 
+          NOTES=$(cat <<NOTES_EOF
+          Pre-built native libwebp ${SEMVER} shared libraries for all supported platforms.
+
+          Built from [webmproject/libwebp@${LIBWEBP_TAG}](https://github.com/webmproject/libwebp/releases/tag/${LIBWEBP_TAG}).
+
+          ## Platforms
+          | Platform | File |
+          |----------|------|
+          | Windows x64 | libwebp-${SEMVER}-win-x64.zip |
+          | Windows x86 | libwebp-${SEMVER}-win-x86.zip |
+          | Windows arm64 | libwebp-${SEMVER}-win-arm64.zip |
+          | Linux x64 | libwebp-${SEMVER}-linux-x64.zip |
+          | Linux arm64 | libwebp-${SEMVER}-linux-arm64.zip |
+          | macOS x64 | libwebp-${SEMVER}-osx-x64.zip |
+          | macOS arm64 | libwebp-${SEMVER}-osx-arm64.zip |
+          NOTES_EOF
+          )
+
           gh release create "$RELEASE_TAG" \
             --repo "${{ github.repository }}" \
             --title "libwebp ${SEMVER} native binaries" \
-            --notes "Pre-built native libwebp ${SEMVER} shared libraries for all supported platforms.
-
-Built from [webmproject/libwebp@${LIBWEBP_TAG}](https://github.com/webmproject/libwebp/releases/tag/${LIBWEBP_TAG}).
-
-## Platforms
-| Platform | File |
-|----------|------|
-| Windows x64 | libwebp-${SEMVER}-win-x64.zip |
-| Windows x86 | libwebp-${SEMVER}-win-x86.zip |
-| Windows arm64 | libwebp-${SEMVER}-win-arm64.zip |
-| Linux x64 | libwebp-${SEMVER}-linux-x64.zip |
-| Linux arm64 | libwebp-${SEMVER}-linux-arm64.zip |
-| macOS x64 | libwebp-${SEMVER}-osx-x64.zip |
-| macOS arm64 | libwebp-${SEMVER}-osx-arm64.zip |" \
+            --notes "$NOTES" \
             release-assets/*.zip
 
   trigger-dotnet-build:
     needs: [resolve-version, create-release]
     if: needs.resolve-version.outputs.is_new_release == 'true' || github.event_name != 'schedule'
-    uses: ./.github/workflows/dotnet.yml
-    with:
-      libwebp_version: ${{ needs.resolve-version.outputs.libwebp_semver }}
-      native_release_tag: ${{ needs.create-release.outputs.release_tag }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger .NET build, test, and NuGet publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run dotnet.yml \
+            --repo "${{ github.repository }}" \
+            -f libwebp_version="${{ needs.resolve-version.outputs.libwebp_semver }}" \
+            -f native_release_tag="${{ needs.create-release.outputs.release_tag }}"
+          echo "Triggered dotnet.yml with libwebp_version=${{ needs.resolve-version.outputs.libwebp_semver }}, native_release_tag=${{ needs.create-release.outputs.release_tag }}"
